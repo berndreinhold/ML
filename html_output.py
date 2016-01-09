@@ -5,19 +5,24 @@ Date : Dec. 23, 2015
 import sys
 
 class html_picture_summary():
-    def __init__(self, of_name):
+    def __init__(self, of_name, CSS=[]):
+        """
+        CSS is a list of style sheets
+        """
         self._output_file=of_name
         self._header = ""
+        self._CSS = CSS
         self._body = ""
+        self._body_content = ""
 
-    def header(self,title, CSS):
+    def header(self,title):
         """
-        produces the header of an html file. CSS is a list of style sheets
+        produces the header of an html file. 
         """
         l = []
         l[len(l):] = ["<head><title>%s</title>" % title]
         l[len(l):] = ['<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">']
-        for c in CSS:
+        for c in self._CSS:
             l[len(l):] = ['<link rel="stylesheet" type="text/css" href="%s">' % c]
         l[len(l):] = ["</head>"]
         self._header = "\n".join(l)
@@ -26,6 +31,7 @@ class html_picture_summary():
         l = []
         l[len(l):] = ["<body>"]
         l[len(l):] = ["<h1>%s</h1>" % title]
+        l[len(l):] = [self._body_content]
         l[len(l):] = ["</body>"]
         self._body = "\n".join(l)
 
@@ -42,12 +48,11 @@ class html_picture_summary():
         return "\n".join(l)
 
 
-    def loop(self):
+    def loop(self, title):
         f = open(self._output_file, 'w')
-        title = "Yippie!"
-        h.header(title, ["Nachmieter.css"])
-        h.body(title)
-        f.write(h.all_html())
+        self.header(title)
+        self.body(title)
+        f.write(self.all_html())
 
         f.close()
         if f.closed: print "wrote to: %s" % self._output_file
@@ -57,8 +62,8 @@ class html_picture_summary():
 
 def main():
     output_file = "mytest.html"
-    h = html_picture_summary(output_file)
-    h.loop()
+    h = html_picture_summary(output_file, ["Nachmieter.css"])
+    h.loop("Yippie!")
     
 
 if __name__ == "__main__":
