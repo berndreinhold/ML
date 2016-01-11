@@ -55,9 +55,9 @@ class html_picture_summary():
         f.write(self.all_html())
 
         f.close()
-        if f.closed: print "wrote to: %s" % self._output_file
+        if f.closed: print("wrote to: %s" % self._output_file)
         else:
-            print "something went wrong with %s" % self._output_file
+            print("something went wrong with %s" % self._output_file)
             sys.exit(-1)
 
 def main():
