@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import sys
+from pandas.tools.plotting import scatter_matrix
 
 import html_output as ho
 
@@ -42,10 +43,26 @@ class plot_1D():
         self._output_dir = outdir #where the PNGs are being produced
         self.list_fig_summary = []
 
+    def corr_plots(self):
+        plt.figure()
+        #self._df.drop([x for ])
+        #scatter_matrix(self._df, alpha=0.2, figsize=(6, 6), diagonal='kde')
+        #scatter_matrix(self._df, alpha=0.2, diagonal='kde')
+        diagonal='kde'
+        scatter_matrix(self._df, alpha=0.2, diagonal=diagonal)
+        print(diagonal)
+        plt.savefig(self._output_dir + "correlation_matrix_%s.png" % diagonal)
+
+        diagonal='hist'
+        scatter_opt={'kind':'hexbin', 'color':'red'}
+        #scatter_opt={'color':'red'}
+        scatter_matrix(self._df, alpha=0.2, hspace=0.2, wspace=0.2, diagonal=diagonal, **scatter_opt)
+        print(diagonal)
+        plt.savefig(self._output_dir + "correlation_matrix_%s.png" % diagonal)
 
     def perVar(self, var_name):
         """for each variable make a PNG and store some text"""
-        print self._df[var_name].dtype
+        print(self._df[var_name].dtype)
         fs = fig_summary()   #fs.mean = average(df[var_name])
         fs.xvar = var_name
         fs.label = var_name
@@ -53,45 +70,49 @@ class plot_1D():
         buffer = []
         if self._df[var_name].dtype in ["object"]: #variables to not plot
             buffer = self._df[var_name].dropna().unique()
-            print buffer[:10]
+            print(buffer[:10])
             if len(buffer)<100:
                 fs.label = "\n".join(buffer)
             else:
                 fs.label = "\n".join(buffer[:100])
         else:
             plt.figure()
+            #args={'log': True}
+            #args = {'bins': 120}
             self._df[var_name].hist()
             plt.suptitle = "%s" % var_name
             fs.xvar = var_name
             fs.yvar = "entries/bin"
             fs.label = var_name
-            print fs.label
+            print(fs.label)
             fs.fig_path = self._output_dir + var_name + ".png"
 
         self.list_fig_summary.append(fs)
 
         #plt.show()
-        print "figure made: ", fs.fig_path
+        print("figure made: ", fs.fig_path)
         plt.savefig(fs.fig_path)
 
     def __del__(self):
-        print self.list_fig_summary
+        print(self.list_fig_summary)
 
 
 def main():
     # For .read_csv, always use header=0 when you know row 0 is the header row
     train_df = pd.read_csv('/home/reinhold/data/ML/input_data/train.csv', header=0)
 
-    output_file = "mytest.html"
+    output_file = "/home/reinhold/data/ML/output_data/mytest.html"
     h = html_picture_summary_df(output_file, ["Nachmieter.css"])
 
-    x = plot_1D(train_df)
+    x = plot_1D(train_df, "/home/reinhold/data/ML/output_data/")
 
-    print train_df.info()
+    print(train_df.info())
     #print type(train_df.columns)
-    for vars in  train_df.columns:
-        print vars
-        x.perVar(vars)
+    #for vars in  train_df.columns:
+    #    print vars
+    #    x.perVar(vars)
+
+    x.corr_plots() #scatter_matrix quite powerful, ignores string variables automatically
 
     h.body_content(x.list_fig_summary, "1D plots of each variable", 2)
     h.loop("Titanic Training Set")
