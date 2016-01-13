@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import sys
+import os
 import pandas.tools.plotting as ptp
 from pandas.compat import lrange
 import seaborn as sns
@@ -22,7 +23,8 @@ class fig_summary():
         self.yvar = ""
         self.label = ""
         self.comment = ""
-        self.fig_path = ""
+        self.fig_path = "" #fig_path + fig_rel_path is where the figure is copied to physically
+        self.fig_rel_path = "" #contains the relative path written to HTML and the name of the figure. It could be: figures/fig_name.png or just fig_name.png
 
 class html_picture_summary_df(ho.html_picture_summary):
     #def __init__(self, of_name, CSS=[]):
@@ -32,18 +34,24 @@ class html_picture_summary_df(ho.html_picture_summary):
         l = []
         l[len(l):] = ["<h%d>%s</h%d>" % (level, title, level)]
         for s in summary_struct:
-            l[len(l):] = ['<img src="%s" alt="%s"/>' % (str(s.fig_path), str(s.label))] #html code
-            l[len(l):] = ["%s, %s" % (str(s.fig_path), str(s.label))]
-
+            l[len(l):] = ['<div class="Fig_BasicInfo">']
+            l[len(l):] = ["<h%d>%s</h%d>" % (level+2, str(s.label), level+2)]
+            l[len(l):] = ["<div>%s</div>" % str(s.fig_rel_path)]
+            l[len(l):] = ['<img src="%s" alt="[no figure]"/>' % str(s.fig_rel_path)] #html code
+            l[len(l):] = ["<div>%s</div>" % str(s.comment)]
+            l[len(l):] = ['</div>']
         if not append: self._body_content = ""
         self._body_content += "\n".join(l)
 
 
 class plot_summary():
-    def __init__(self, df, outdir="./"):
+    def __init__(self, df, html_dir="./", rel_dir=""):
         self._df = df #input dataframe from which to make plots
-        if outdir[-1]!="/": outdir+="/"
-        self._output_dir = outdir #where the PNGs are being produced
+        if html_dir[-1]!="/": html_dir+="/"
+        self._output_dir = html_dir #where the HTML file is being stored
+        if len(rel_dir)>0 and rel_dir[-1]!="/": rel_dir+="/"
+        self._rel_dir = rel_dir #the PNGs and the CSS are being stored in self._output_dir + self._rel_dir
+        if not os.path.exists(self._output_dir + self._rel_dir): os.makedirs(self._output_dir + self._rel_dir)
         self.list_fig_summary = []
 
     def corr_plots(self, append=True):
@@ -70,10 +78,11 @@ class plot_summary():
         #scatter_matrix(self._df, alpha=0.2, diagonal=diagonal)
 
         fs = fig_summary()   #fs.mean = average(df[var_name])
-        fs.label = "correlation matrix"
-        fs.fig_path = self._output_dir + "correlation_plots_%s.png" % diagonal
+        fs.label = "pair-wise correlation plots"
+        fs.fig_path = self._output_dir
+        fs.fig_rel_path = self._rel_dir + "correlation_plots_%s.png" % diagonal
         
-        plt.savefig(fs.fig_path)
+        plt.savefig(fs.fig_path + fs.fig_rel_path)
         if not append: self.list_fig_summary.clear()
         self.list_fig_summary.append(fs)
 
@@ -131,9 +140,10 @@ class plot_summary():
         
         fs = fig_summary()   #fs.mean = average(df[var_name])
         fs.label = "correlation matrix"
-        fs.fig_path = self._output_dir + "correlation_matrix.png"
+        fs.fig_path = self._output_dir
+        fs.fig_rel_path = self._rel_dir + "correlation_matrix.png"
         
-        plt.savefig(fs.fig_path)
+        plt.savefig(fs.fig_path + fs.fig_rel_path)
         if not append: self.list_fig_summary.clear()
         self.list_fig_summary.append(fs)
 
@@ -149,10 +159,13 @@ class plot_summary():
         if self._df[var_name].dtype in ["object"]: #variables to not plot
             buffer = self._df[var_name].dropna().unique()
             print(buffer[:10])
+            fs.label = var_name
+            fs.comment = "distinct values:\n"
             if len(buffer)<100:
-                fs.label = "\n".join(buffer)
+                fs.comment += "\n".join(buffer)
             else:
-                fs.label = "\n".join(buffer[:100])
+                fs.comment += "\n".join(buffer[:100])
+                fs.comment += "\n[...]"
         else:
             plt.figure()
             #args={'log': True}
@@ -164,13 +177,14 @@ class plot_summary():
             fs.yvar = "entries/bin"
             fs.label = var_name
             print(fs.label)
-            fs.fig_path = self._output_dir + var_name + ".png"
+            fs.fig_path = self._output_dir
+            fs.fig_rel_path = self._rel_dir + var_name + ".png"
 
         self.list_fig_summary.append(fs)
 
         #plt.show()
-        print("figure made: ", fs.fig_path)
-        plt.savefig(fs.fig_path)
+        print("figure made: ", fs.fig_path + fs.fig_rel_path)
+        plt.savefig(fs.fig_path + fs.fig_rel_path)
 
     def __del__(self):
         print(self.list_fig_summary)
@@ -180,10 +194,12 @@ def main():
     # For .read_csv, always use header=0 when you know row 0 is the header row
     train_df = pd.read_csv('/home/reinhold/data/ML/input_data/train.csv', header=0)
 
-    output_file = "/home/reinhold/data/ML/output_data/mytest.html"
-    h = html_picture_summary_df(output_file, ["Nachmieter.css"])
+    output_filepath = "/home/reinhold/data/ML/output_data/"
+    output_filename = "Titanic_beforePCA.html"
+    h = html_picture_summary_df(output_filename, output_filepath, ["basic_style.css"])
 
-    x = plot_summary(train_df, "/home/reinhold/data/ML/output_data/")
+    x = plot_summary(train_df, output_filepath, "figures/")
+    #x = plot_summary(train_df, output_filepath)
 
     x.corr_plots(False) #scatter_matrix quite powerful, ignores string variables automatically
     x.corr_matrix(True) 

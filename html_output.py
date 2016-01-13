@@ -3,13 +3,15 @@ Author : Bernd
 Date : Dec. 23, 2015
 """
 import sys
+import shutil
 
 class html_picture_summary():
-    def __init__(self, of_name, CSS=[]):
+    def __init__(self, of_name, of_dir="", CSS=[]):
         """
         CSS is a list of style sheets
         """
         self._output_file=of_name
+        self._output_dir=of_dir
         self._header = ""
         self._CSS = CSS
         self._body = ""
@@ -24,6 +26,7 @@ class html_picture_summary():
         l[len(l):] = ['<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">']
         for c in self._CSS:
             l[len(l):] = ['<link rel="stylesheet" type="text/css" href="%s">' % c]
+            shutil.copy(c, self._output_dir)
         l[len(l):] = ["</head>"]
         self._header = "\n".join(l)
 
@@ -49,7 +52,7 @@ class html_picture_summary():
 
 
     def loop(self, title):
-        f = open(self._output_file, 'w')
+        f = open(self._output_dir + self._output_file, 'w')
         self.header(title)
         self.body(title)
         f.write(self.all_html())
@@ -62,7 +65,8 @@ class html_picture_summary():
 
 def main():
     output_file = "mytest.html"
-    h = html_picture_summary(output_file, ["Nachmieter.css"])
+    output_path = "./"
+    h = html_picture_summary(output_file, output_path, ["basic_style.css"])
     h.loop("Yippie!")
     
 
