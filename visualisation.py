@@ -12,6 +12,7 @@ import os
 import pandas.tools.plotting as ptp
 from pandas.compat import lrange
 import seaborn as sns
+import pandas.core.common as com
 
 import html_output as ho
 
@@ -186,6 +187,54 @@ class plot_summary():
         print("figure made: ", fs.fig_path + fs.fig_rel_path)
         plt.savefig(fs.fig_path + fs.fig_rel_path)
 
+    def plots_2D(self, range_padding=0.05):
+        """
+        make 2D correlation plots (hexbin) for numerical data
+        strongly inspired by/ code copied from scatter_matrix() from pandas/tools/plotting.py
+        plot normal and with log-z enabled next to each other.
+        """
+        df = self._df._get_numeric_data()
+        n = df.columns.size
+        naxes = n * n
+
+        mask = com.notnull(df)
+
+        boundaries_list = []
+        for a in df.columns:
+            values = df[a].values[mask[a].values]
+            rmin_, rmax_ = np.min(values), np.max(values)
+            rdelta_ext = (rmax_ - rmin_) * range_padding / 2.
+            boundaries_list.append((rmin_ - rdelta_ext, rmax_+ rdelta_ext))
+
+        kwds = {'bins' : 'log'}
+
+        for i, a in zip(lrange(n), df.columns):
+            for j, b in zip(lrange(n), df.columns):
+                if i == j: continue #only the non-diagonal elements
+
+                fs = fig_summary()   #fs.mean = average(df[var_name])
+                fig, axes = plt.subplots(1,2, sharey=True) #http://matplotlib.org/examples/pylab_examples/subplots_demo.html
+                common = (mask[a] & mask[b]).values
+                for ax in axes:
+                    
+                    ax.hexbin(df[b][common], df[a][common], gridsize=10, **kwds)
+                    ax.set_xlim(boundaries_list[j])
+                    ax.set_ylim(boundaries_list[i])
+                    ax.set_xlabel(b)
+                    ax.set_ylabel(a)
+
+                fs.xvar = a
+                fs.yvar = b
+                fs.label = "%s_%s" % (a, b)
+                #print(fs.label)
+                fs.fig_path = self._output_dir
+                fs.fig_rel_path = self._rel_dir + fs.label + ".png"
+
+                self.list_fig_summary.append(fs)
+                #plt.show()
+                print("figure made: ", fs.fig_path + fs.fig_rel_path)
+                plt.savefig(fs.fig_path + fs.fig_rel_path)
+
     def __del__(self):
         print(self.list_fig_summary)
 
@@ -199,26 +248,30 @@ def main():
     output_filepath = "/home/reinhold/data/ML/intermediate_data/AfterCleanUp/"
     #output_filename = "Titanic_beforePCA.html"
     output_filename = "TitanicTrainingSet_AfterCleanUp.html"
-    h = html_picture_summary_df(output_filename, output_filepath, ["basic_style.css"])
+    html = html_picture_summary_df(output_filename, output_filepath, ["basic_style.css"])
 
-    x = plot_summary(df, output_filepath, "figures/")
-    #x = plot_summary(train_df, output_filepath)
+    plot_sum = plot_summary(df, output_filepath, "figures/")
+    #plot_sum = plot_summary(train_df, output_filepath)
 
-    x.corr_plots(False) #scatter_matrix quite powerful, ignores string variables automatically
-    x.corr_matrix(True) 
-    h.body_content(x.list_fig_summary, "correlation matrix and correlation plots (columns pair-wise)", 2, True)
+    ####TEMPORARILY
+    #plot_sum.corr_plots(False) #scatter_matrix quite powerful, ignores string variables automatically
+    #plot_sum.corr_matrix(True) 
+    #html.body_content(plot_sum.list_fig_summary, "correlation matrix and correlation plots (columns pair-wise)", 2, True)
 
-    x.list_fig_summary.clear()
+    #plot_sum.list_fig_summary.clear()
+    #for vars in df.columns: 
+    #    print(vars)
+    #    plot_sum.perVar(vars) #includes also non-numeric columns
+    #html.body_content(plot_sum.list_fig_summary, "1D plots of each variable", 2, True)
 
-    #print(df.info())
-    #print type(df.columns)
-    for vars in  df.columns:
-        print(vars)
-        x.perVar(vars)
-    h.body_content(x.list_fig_summary, "1D plots of each variable", 2, True)
+    #pairwise plots only for numeric columns
+    plot_sum.list_fig_summary.clear()
+    plot_sum.plots_2D()
+    html.body_content(plot_sum.list_fig_summary, "pair-wise correlation plots of two numeric variables", 2, True)
 
-    #h.loop("Titanic Training Set (before PCA)")
-    h.loop("Titanic Training Set (After Clean Up)")
+
+    #html.loop("Titanic Training Set (before PCA)")
+    html.loop("Titanic Training Set (After Clean Up)")
 
     
 if __name__ == "__main__":
