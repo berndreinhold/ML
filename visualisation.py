@@ -192,13 +192,16 @@ class plot_summary():
 
 def main():
     # For .read_csv, always use header=0 when you know row 0 is the header row
-    train_df = pd.read_csv('/home/reinhold/data/ML/input_data/train.csv', header=0)
+    #train_df = pd.read_csv('/home/reinhold/data/ML/input_data/train.csv', header=0)
+    #df = pd.read_csv('/home/reinhold/data/ML/input_data/train.csv', header=0)
+    df = pd.read_csv('/home/reinhold/data/ML/intermediate_data/train_df_cleaned.csv', header=0)
 
-    output_filepath = "/home/reinhold/data/ML/output_data/"
-    output_filename = "Titanic_beforePCA.html"
+    output_filepath = "/home/reinhold/data/ML/intermediate_data/AfterCleanUp/"
+    #output_filename = "Titanic_beforePCA.html"
+    output_filename = "TitanicTrainingSet_AfterCleanUp.html"
     h = html_picture_summary_df(output_filename, output_filepath, ["basic_style.css"])
 
-    x = plot_summary(train_df, output_filepath, "figures/")
+    x = plot_summary(df, output_filepath, "figures/")
     #x = plot_summary(train_df, output_filepath)
 
     x.corr_plots(False) #scatter_matrix quite powerful, ignores string variables automatically
@@ -207,14 +210,15 @@ def main():
 
     x.list_fig_summary.clear()
 
-    #print(train_df.info())
-    #print type(train_df.columns)
-    for vars in  train_df.columns:
+    #print(df.info())
+    #print type(df.columns)
+    for vars in  df.columns:
         print(vars)
         x.perVar(vars)
     h.body_content(x.list_fig_summary, "1D plots of each variable", 2, True)
 
-    h.loop("Titanic Training Set")
+    #h.loop("Titanic Training Set (before PCA)")
+    h.loop("Titanic Training Set (After Clean Up)")
 
     
 if __name__ == "__main__":
