@@ -1,5 +1,6 @@
 #!/usr/bin/env Python
 #try out examples from http://pandas.pydata.org/pandas-docs/stable/visualization.html
+#in particular the df.plot(kind='bar')
 
 import pandas as pd
 from pandas import DataFrame
