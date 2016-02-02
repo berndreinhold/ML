@@ -16,6 +16,8 @@ import pandas.core.common as com
 
 import html_output as ho
 
+array_variables = ['Employment_Info', 'Family_Hist', 'Insurance_History', 'InsuredInfo', 'Medical_History', 'Medical_Keyword', 'Product_Info'] #list the variables with _[0-9]+ in order to count the number of nan per 'array' and to aggregate them
+
 class fig_summary():
     def __init__(self):
         self.mean = -1
@@ -44,7 +46,7 @@ class html_picture_summary_df(ho.html_picture_summary):
         if not append: self._body_content = ""
         self._body_content += "\n".join(l)
 
-
+ 
 class plot_summary():
     def __init__(self, df, html_dir="./", rel_dir=""):
         self._df = df #input dataframe from which to make plots
@@ -98,13 +100,21 @@ class plot_summary():
         #        print("correlation_matrix_%s_%s.png" % (ax.get_xlabel(), ax.get_ylabel()))
         #        plt.savefig(self._output_dir + "correlation_matrix_%s_%s.png" % (ax.get_xlabel(), ax.get_ylabel()))
 
-    def corr_matrix(self, append=True):
+    def corr_matrix(self, append=True, df=None, label=""):
         """
         produces correlation matrix
         """
-        print(sys._getframe().f_code.co_name)
-        plt.figure()
-        corr_df = self._df.corr()
+        print("function: %s, label: %s, df is None: %s" % (sys._getframe().f_code.co_name, label, df is None))
+
+
+        if df is None:
+            corr_df = self._df.corr()
+        else:
+            corr_df = df.corr()
+
+        for col in corr_df.columns:
+            print(col)
+        
         #print("corr_df: ")
         #print(corr_df)
         #print(corr_df.info())
@@ -122,6 +132,7 @@ class plot_summary():
         #        y.append(y_i)
         #        z.append(corr_xy)
 
+        plt.figure()
         #plt.scatter(x,y, c=z, s=500, square=True, vmin=-1, vmax=1)
         #plt.heatmap(x,y, c=z, s=500, square=True, vmin=-1, vmax=1)
         #plt.scatter(x,y, c=z, s=500, vmax=1)
@@ -140,9 +151,10 @@ class plot_summary():
         #    for y,label_y in enumerate(self._df.columns)
         
         fs = fig_summary()   #fs.mean = average(df[var_name])
-        fs.label = "correlation matrix"
+        fs.label = "correlation matrix " + label
         fs.fig_path = self._output_dir
-        fs.fig_rel_path = self._rel_dir + "correlation_matrix.png"
+        if len(label)>0: label = "_" + label
+        fs.fig_rel_path = self._rel_dir + "correlation_matrix%s.png" % label
         
         plt.savefig(fs.fig_path + fs.fig_rel_path)
         if not append: self.list_fig_summary.clear()
@@ -193,6 +205,7 @@ class plot_summary():
         strongly inspired by/ code copied from scatter_matrix() from pandas/tools/plotting.py
         plot normal and with log-z enabled next to each other.
         """
+
         df = self._df._get_numeric_data()
         n = df.columns.size
         naxes = n * n
@@ -235,6 +248,59 @@ class plot_summary():
                 print("figure made: ", fs.fig_path + fs.fig_rel_path)
                 plt.savefig(fs.fig_path + fs.fig_rel_path)
 
+    def plots_2D_vs_response(self, range_padding=0.05):
+        """
+        make 2D correlation plots (hexbin) for numerical data vs the output variable 'response' (from Prudential kaggle competition)
+        strongly inspired by/ code copied from scatter_matrix() from pandas/tools/plotting.py
+        plot normal and with log-z enabled next to each other.
+        """
+
+        df = self._df._get_numeric_data()
+        n = df.columns.size
+        naxes = n * n
+
+        mask = com.notnull(df)
+
+        j = -1
+
+        boundaries_list = []
+        for a in df.columns:
+            values = df[a].values[mask[a].values]
+            rmin_, rmax_ = np.min(values), np.max(values)
+            rdelta_ext = (rmax_ - rmin_) * range_padding / 2.
+            boundaries_list.append((rmin_ - rdelta_ext, rmax_+ rdelta_ext))
+            if a == 'Response': j = len(boundaries_list)-1 #j is used below to access the boundaries_list variable
+
+        if j<0: print("Error: Response-variable not found")
+
+        kwds = {'bins' : 'log'}
+
+        for i, a in zip(lrange(n), df.columns):
+            if a == 'Response': continue
+            fs = fig_summary()   #fs.mean = average(df[var_name])
+            fig, axes = plt.subplots(1,2, sharey=True) #http://matplotlib.org/examples/pylab_examples/subplots_demo.html
+            common = (mask[a] & mask['Response']).values
+            for ax in axes:
+                    
+                ax.hexbin(df['Response'][common], df[a][common], gridsize=10, **kwds)
+                ax.set_xlim(boundaries_list[j])
+                ax.set_ylim(boundaries_list[i])
+                ax.set_xlabel('Response')
+                ax.set_ylabel(a)
+
+
+                fs.xvar = 'Response'
+                fs.yvar = a
+                fs.label = "%s_%s" % (a, 'Response')
+                #print(fs.label)
+                fs.fig_path = self._output_dir
+                fs.fig_rel_path = self._rel_dir + fs.label + ".png"
+
+                self.list_fig_summary.append(fs)
+                #plt.show()
+                print("figure made: ", fs.fig_path + fs.fig_rel_path)
+                plt.savefig(fs.fig_path + fs.fig_rel_path)
+
     def __del__(self):
         print(self.list_fig_summary)
 
@@ -242,21 +308,50 @@ class plot_summary():
 def main():
     # For .read_csv, always use header=0 when you know row 0 is the header row
     #train_df = pd.read_csv('/home/reinhold/data/ML/input_data/train.csv', header=0)
-    #df = pd.read_csv('/home/reinhold/data/ML/input_data/train.csv', header=0)
-    df = pd.read_csv('/home/reinhold/data/ML/intermediate_data/train_df_cleaned.csv', header=0)
+    #df = pd.read_csv('/home/reinhold/data/ML/Prudential/input_data/train_Prudential.csv', header=0)
+    df = pd.read_csv('/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_cleaned.csv', header=0)
+    #df = pd.read_csv('/home/reinhold/data/ML/intermediate_data/train_df_cleaned.csv', header=0)
 
-    output_filepath = "/home/reinhold/data/ML/intermediate_data/AfterCleanUp/"
-    #output_filename = "Titanic_beforePCA.html"
-    output_filename = "TitanicTrainingSet_AfterCleanUp.html"
+    output_filepath = "/home/reinhold/data/ML/Prudential/intermediate_data/"
+    #output_filename = "train_Prudential_beforeAnything.html"
+    #output_filename = "train_Prudential_afterCleaning.html"
+    output_filename = "train_Prudential_corr_matrices.html"
+    #output_filename = "TitanicTrainingSet_AfterCleanUp.html"
     html = html_picture_summary_df(output_filename, output_filepath, ["basic_style.css"])
 
     plot_sum = plot_summary(df, output_filepath, "figures/")
     #plot_sum = plot_summary(train_df, output_filepath)
 
-    ####TEMPORARILY
+    html.body_content([], "correlation matrix and correlation plots (columns pair-wise)", 2, False)
     #plot_sum.corr_plots(False) #scatter_matrix quite powerful, ignores string variables automatically
-    #plot_sum.corr_matrix(True) 
-    #html.body_content(plot_sum.list_fig_summary, "correlation matrix and correlation plots (columns pair-wise)", 2, True)
+
+
+    in_ = []
+    out_ = [] #list of columns, that are excluded from the usual correlation matrix: all array_variables, except their aggregates (var_count_null, var_sum)
+    for col in df.columns:
+        if col.find("count_null")!=-1 or col.find("sum")!=-1:
+            in_[len(in_):] = [col]
+        for av in array_variables:
+            if col.startswith(av):
+                out_[len(out_):] = [col]
+
+    all_set = set(df.columns)
+    in_set = set(in_)
+    out_set = set(out_)
+
+    all_columns = all_set - (out_set - in_set) #double exclusion, yeah! first out_set - in_set: exclude count_null, sum from array_variables, because we want to keep these in the overall dataset.
+    print(all_columns)
+    
+    temp_df = df[[x for x in all_columns]]
+    label = "all_except_array_variables"
+    plot_sum.corr_matrix(False, temp_df, label) 
+    html.body_content(plot_sum.list_fig_summary, "correlation matrix (%s)" % label, 3, True)
+
+    for av in array_variables:
+        temp_df = df.filter(regex=av)
+        label = av
+        plot_sum.corr_matrix(False, temp_df, label) 
+        html.body_content(plot_sum.list_fig_summary, "correlation matrix (%s)" % label, 3, True)
 
     #plot_sum.list_fig_summary.clear()
     #for vars in df.columns: 
@@ -264,14 +359,19 @@ def main():
     #    plot_sum.perVar(vars) #includes also non-numeric columns
     #html.body_content(plot_sum.list_fig_summary, "1D plots of each variable", 2, True)
 
-    #pairwise plots only for numeric columns
-    plot_sum.list_fig_summary.clear()
-    plot_sum.plots_2D()
-    html.body_content(plot_sum.list_fig_summary, "pair-wise correlation plots of two numeric variables", 2, True)
+
+    ##pairwise plots only for numeric columns --- too much, don't use
+    #plot_sum.list_fig_summary.clear()
+    #plot_sum.plots_2D()
+    #html.body_content(plot_sum.list_fig_summary, "pair-wise correlation plots of two numeric variables", 2, True)
+
+    ##pairwise plots only for numeric columns
+    #plot_sum.list_fig_summary.clear()
+    #plot_sum.plots_2D_vs_response()
+    #html.body_content(plot_sum.list_fig_summary, "pair-wise correlation plots of each variable with the 'Response'", 2, True)
 
 
-    #html.loop("Titanic Training Set (before PCA)")
-    html.loop("Titanic Training Set (After Clean Up)")
+    html.loop("Prudential Training Set (after cleaning)")
 
     
 if __name__ == "__main__":
