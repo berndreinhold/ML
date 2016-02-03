@@ -50,17 +50,64 @@ def count_null(df):
 
     #print(df.filter(regex="count_null").head(10))
 
+def remove_vars(df):
+    in_ = []
+    out_ = [] #list of columns, that are excluded from the usual correlation matrix: all array_variables, except their aggregates (var_count_null, var_sum)
+    for col in df.columns:
+        if col.find("count_null")!=-1 or col.find("sum")!=-1:
+            in_[len(in_):] = [col]
+        for av in array_variables:
+            if col.startswith(av):
+                out_[len(out_):] = [col]
+
+    all_set = set(df.columns)
+    in_set = set(in_)
+    out_set = set(out_)
+
+    all_columns = all_set - (out_set - in_set) #double exclusion, yeah! first out_set - in_set: exclude count_null, sum from array_variables, because we want to keep these in the overall dataset.
+
+    column_list = [x for x in all_columns]
+    column_list.sort()
+    print(column_list)
+
     
+    return df[column_list]
+
+
+    
+def drop_array_variables():
+    """
+    try without the array variables, just the sum and the not null counts - this is because Brendan had concerns about too many variables with a boosted decision tree.
+    Has to be called after clean_data(), since this creates clean output dataset.
+    """
+    train = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_cleaned.csv", header=0)
+    test = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_cleaned.csv", header=0)
+
+    train = remove_vars(train)
+    test = remove_vars(test)
+
+    #store output
+    train_buffer = "/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_stripped_array_variables.csv"
+    test_buffer = "/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_stripped_array_variables.csv"
+
+    train.to_csv(train_buffer, index=False) #Id is the index
+    test.to_csv(test_buffer, index=False) #Id is the index
 
 
 
-
-def main():
-
+def clean_data():
+    """
+    fill NaN with median and scale by max-value
+    """
+    
     print("Load the data using pandas")
     #all_data = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/Prudential_1000.csv", header=0)
     train = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/train_Prudential.csv", header=0)
     test = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/test_Prudential.csv", header=0)
+
+    print(train["Id"].head(10))
+    print(test["Id"].head(10))
+
     
     # combine train and test
     all_data = train.append(test)
@@ -87,7 +134,7 @@ def main():
     all_data.fillna(-1, inplace=True)
 
     for mv in max_values.index:
-        if max_values[mv]>0 and mv !=  'Response':
+        if max_values[mv]>0 and not (mv ==  'Response' or mv == 'Id'):
             all_data[mv] = all_data[mv]/max_values[mv];
         else: print("unexpected max value %f for index %s, do nothing" % (max_values[mv], mv))
 
@@ -109,18 +156,22 @@ def main():
     train_buffer = "/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_cleaned.csv"
     test_buffer = "/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_cleaned.csv"
 
-    train.to_csv(train_buffer)
-    test.to_csv(test_buffer)
+    print(train["Id"].head(10))
+    print(test["Id"].head(10))
+
+    train.to_csv(train_buffer, index=False) #Id is the index
+    test.to_csv(test_buffer, index=False) #Id is the index
 
     for col in train.columns:
         print(col)
 
-    print(train.filter(regex="count_null").head(10))
+    #print(train.filter(regex="count_null").head(10))
     
     print("output file created: %s, entries: %d" % (train_buffer, len(train)))
     print("output file created: %s, entries: %d" % (test_buffer, len(test)))
 
 
 if __name__ == "__main__":
-    main()
+    drop_array_variables()
+    #clean_data()
     print("end: %.3f seconds" % (time.time() - start_time))
