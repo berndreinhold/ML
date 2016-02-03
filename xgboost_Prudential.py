@@ -55,8 +55,10 @@ def main():
     #all_data = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/Prudential_1000.csv", header=0) ### useful for testing
     #train = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_cleaned.csv", header=0)
     #test = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_cleaned.csv", header=0)
-    train = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/train_Prudential.csv", header=0)
-    test = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/test_Prudential.csv", header=0)
+    train = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_stripped_array_variables.csv", header=0)
+    test = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_stripped_array_variables.csv", header=0)
+    #train = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/train_Prudential.csv", header=0)
+    #test = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/test_Prudential.csv", header=0)
     
     # combine train and test
     all_data = train.append(test)
@@ -66,14 +68,14 @@ def main():
     all_data.fillna(-1, inplace=True)
 
 
-    # create any new variables    
-    all_data['Product_Info_2_char'] = all_data.Product_Info_2.str[1]
-    all_data['Product_Info_2_num'] = all_data.Product_Info_2.str[2]
+    ## create any new variables    
+    #all_data['Product_Info_2_char'] = all_data.Product_Info_2.str[1]
+    #all_data['Product_Info_2_num'] = all_data.Product_Info_2.str[2]
     
-    # factorize categorical variables
-    all_data['Product_Info_2'] = pd.factorize(all_data['Product_Info_2'])[0]
-    all_data['Product_Info_2_char'] = pd.factorize(all_data['Product_Info_2_char'])[0]
-    all_data['Product_Info_2_num'] = pd.factorize(all_data['Product_Info_2_num'])[0]
+    ## factorize categorical variables
+    #all_data['Product_Info_2'] = pd.factorize(all_data['Product_Info_2'])[0]
+    #all_data['Product_Info_2_char'] = pd.factorize(all_data['Product_Info_2_char'])[0]
+    #all_data['Product_Info_2_num'] = pd.factorize(all_data['Product_Info_2_num'])[0]
 
 
     # fix the dtype on the label column
@@ -126,7 +128,7 @@ def main():
 
     preds_out = pd.DataFrame({"Id": test['Id'].values, "Response": final_test_preds})
     preds_out = preds_out.set_index('Id')
-    output_buffer = 'py_xgb_cleaned.csv'
+    output_buffer = '/home/reinhold/data/ML/Prudential/output_data/py_xgb_stripped_array_variables.csv'
     preds_out.to_csv(output_buffer)
     print("file created: ", output_buffer)
 
