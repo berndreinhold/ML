@@ -87,9 +87,12 @@ def drop_array_variables():
     test = remove_vars(test)
 
     #store output
+
     train_buffer = "/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_stripped_array_variables.csv"
     test_buffer = "/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_stripped_array_variables.csv"
 
+    train.set_index('Id')
+    test.set_index('Id')
     train.to_csv(train_buffer, index=False) #Id is the index
     test.to_csv(test_buffer, index=False) #Id is the index
 
@@ -104,10 +107,6 @@ def clean_data():
     #all_data = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/Prudential_1000.csv", header=0)
     train = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/train_Prudential.csv", header=0)
     test = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/test_Prudential.csv", header=0)
-
-    print(train["Id"].head(10))
-    print(test["Id"].head(10))
-
     
     # combine train and test
     all_data = train.append(test)
@@ -152,15 +151,53 @@ def clean_data():
     train = all_data[all_data['Response']>0].copy()
     test = all_data[all_data['Response']<1].copy()
 
+    #standardizing datasets
+    #calculate means and stddev from train dataset and apply to both training and test dataset, except on 'Id' and 'Response'
+
+    columns_ = [x for x in train.columns if train.std()[x]==0]
+    print("drop columns with std==0:")
+    print(columns_)
+    train = train.drop(columns_, axis=1)
+    test = test.drop(columns_, axis=1)
+
+    columns_set = set([x for x in train.columns if train.std()[x]>0]) 
+    columns_ = [x for x in columns_set - set(['Id', 'Response'])] #set is useful to exclude certain columns
+    print(columns_)
+
+    #for col in train.columns:
+    #    if col in ['Id', 'Response']:
+    #        print("skip %s" % col)
+    #        continue
+    #    if train.std()[col]==0:
+    #        print("skip %s, since std is 0" % col)
+    #        continue
+    #    train[col] = (train[col] - train.mean()[col]) / train.std()[col]
+    #    test[col] = (test[col] - train.mean()[col]) / train.std()[col]
+
+    means_ = train.mean()[columns_]
+    std_ = train.std()[columns_]
+
+    train[columns_] = (train[columns_] - means_[columns_]) / std_[columns_]
+    test[columns_] = (test[columns_] - means_[columns_]) / std_[columns_]
+
+
+    #train_norm['Id'] = train.std()['Id']*train_norm['Id'] + train.mean()['Id']
+    #train_norm['Response'] = train.std()['Response']*train_norm['Response'] + train.mean()['Response']
+        
+
+
     #store output
-    train_buffer = "/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_cleaned.csv"
-    test_buffer = "/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_cleaned.csv"
+    train_buffer = "/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_standardized.csv"
+    test_buffer = "/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_standardized.csv"
+    means_buffer = "/home/reinhold/data/ML/Prudential/intermediate_data/means_Prudential_standardized.csv"
 
-    print(train["Id"].head(10))
-    print(test["Id"].head(10))
-
+    train.set_index('Id')
+    test.set_index('Id')
     train.to_csv(train_buffer, index=False) #Id is the index
     test.to_csv(test_buffer, index=False) #Id is the index
+
+    means_df = pd.DataFrame({'mean':means_, 'std':std_})
+    means_df.to_csv(means_buffer, index=False)
 
     for col in train.columns:
         print(col)
@@ -169,9 +206,10 @@ def clean_data():
     
     print("output file created: %s, entries: %d" % (train_buffer, len(train)))
     print("output file created: %s, entries: %d" % (test_buffer, len(test)))
+    print("output file created: %s, entries: %d" % (means_buffer, len(means_df)))
 
 
 if __name__ == "__main__":
-    drop_array_variables()
-    #clean_data()
+    #drop_array_variables()
+    clean_data()
     print("end: %.3f seconds" % (time.time() - start_time))
