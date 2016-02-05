@@ -16,6 +16,7 @@ from sklearn import metrics
 #following implementation in http://pastebin.com/JuEmXqAv
 
 def main():
+    print("response, samples, n_components, silhouette score for k=2,3,4,6,8")
     for resp in [1,2, 3]:
         for n_comp in [3, 5, 10]:
             kMeansScan(resp, n_comp, "/home/reinhold/data/ML/Prudential/intermediate_data/figures/")
@@ -69,9 +70,9 @@ def kMeansScan(resp, n_comp, fig_dir=""):
         #print(line)
         #print("OK")
 
-    print(meandist)
+    #print(meandist)
     #print(between_cluster_sumsquares)
-    print(resp, df_train_PCA.shape, ", ".join(["%.5f" % ss for ss in silhouette_s]))
+    print(resp, ", ".join(["%d" %x for x in df_train_PCA.shape]), ", ".join(["%.5f" % ss for ss in silhouette_s]))
 
 
     """
