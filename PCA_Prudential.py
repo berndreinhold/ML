@@ -45,26 +45,45 @@ def main():
     #training dataset:
     #df_train = pd.read_csv('/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_cleaned.csv', header=0)
     df_train = pd.read_csv('/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_standardized.csv', header=0)
-    df_train_buffer = pd.DataFrame(df_train[['Id','Response']], columns=['Id', 'Response'], index=df_train['Id']) #copy them before they are being dropped, for later insertion in the output dataframe
+    print("unique values df_train:")
+    print(df_train['Response'].unique())
+    
+    #df_train_buffer = pd.DataFrame(df_train[['Id','Response']], columns=['Id', 'Response'], index=df_train['Id']) #copy them before they are being dropped, for later insertion in the output dataframe
+    df_train_buffer = pd.DataFrame({"Id": df_train['Id'].astype(int).values, "Response": df_train['Response'].astype(int).values})
+    #df_train_buffer = df_train_buffer.set_index('Id')
+    print(df_train_buffer.describe())
+    print("unique values df_train_buffer:")
+    print(df_train_buffer['Response'].unique())
+    print(df_train_buffer['Id'].unique())
+
     df_train = df_train.drop(['Response', 'Id'], axis=1)
 
     #test dataset:
     #df_test = pd.read_csv('/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_cleaned.csv', header=0)
     df_test = pd.read_csv('/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_standardized.csv', header=0)
-    df_test_buffer = pd.DataFrame(df_test[['Id','Response']], columns=['Id', 'Response'], index=df_test['Id']) #copy them before they are being dropped, for later insertion in the output dataframe
+    #df_test_buffer = pd.DataFrame(df_test[['Id','Response']], columns=['Id', 'Response'], index=df_test['Id']) #copy them before they are being dropped, for later insertion in the output dataframe
+    df_test_buffer = pd.DataFrame({"Id": df_test['Id'].astype(int).values, "Response": df_test['Response'].astype(int).values})
+    print("unique values df_test_buffer:")
+    print(df_test_buffer['Response'].unique())
+    print(df_test_buffer['Id'].unique())
+
     df_test = df_test.drop(['Response', 'Id'], axis=1)
 
     #fit
 
-    print("selected number of components: out of %d" % len(df_train.columns))
-    for i in range(50,99):
-        pca = decomposition.PCA(n_components=i*1./100)
-        pca.fit(df_train) #fit the model with X - what does that mean?
-        print("%d, %d" % (i, pca.n_components_)) 
+    #print("selected number of components: out of %d" % len(df_train.columns))
+    #for i in range(50,99):
+    #pca = decomposition.PCA(n_components=i*1./100)
+    print("do PCA fit to training set:")
+    pca = decomposition.PCA()
+    pca.fit(df_train) #fit the model with X - what does that mean?
+    #print("%d, %d" % (i, pca.n_components_)) 
     #print(pca.explained_variance_)
     #print(pca.explained_variance_ratio_)
 
-    return
+
+
+    #return
     #transform
     df_train_PCA = pd.DataFrame(pca.transform(df_train))
     df_train_PCA['Id']= df_train_buffer['Id'] 
