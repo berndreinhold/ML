@@ -107,14 +107,19 @@ def clean_data():
     #all_data = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/Prudential_1000.csv", header=0)
     train = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/train_Prudential.csv", header=0)
     test = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/test_Prudential.csv", header=0)
-    
+
+    print(train.shape)
+    print(test.shape)
+
     # combine train and test
     all_data = train.append(test)
 
-    count_null(all_data) #adds new variables
+    #count_null(all_data) #adds new variables
 
     # factorize categorical variables -> "D2" to unique identifier
     all_data['Product_Info_2'] = pd.factorize(all_data['Product_Info_2'])[0]
+    all_data['Ins_AgeBMI'] = all_data['Ins_Age']*all_data['BMI']
+
 
     ####fill missing values with medians and scale each column by its max_value
     medians = all_data.median(0)
@@ -138,9 +143,11 @@ def clean_data():
         else: print("unexpected max value %f for index %s, do nothing" % (max_values[mv], mv))
 
     ##now aggregate all array_variables, now that they are all normalized to a max value of 1
-    for av in array_variables:
+    #for av in array_variables:
     #    #http://stackoverflow.com/questions/12569730/sum-all-columns-with-a-wildcard-name-search-using-python-pandas#12570410
-        all_data['%s_sum' % av] = all_data.filter(regex=av).sum(1)
+    #    all_data['%s_sum' % av] = all_data.filter(regex=av).sum(1)
+    #comment: PCA showed that these are strongly (anti)correlated with their individual array variables and so I disabled them again - it was interesting to study them though
+        
 
     print('nan-values filled and sums for array variables calculated: %.3f seconds' % (time.time() - start_time))    
 
@@ -163,6 +170,7 @@ def clean_data():
     columns_set = set([x for x in train.columns if train.std()[x]>0]) 
     columns_ = [x for x in columns_set - set(['Id', 'Response'])] #set is useful to exclude certain columns
     print(columns_)
+
 
     #for col in train.columns:
     #    if col in ['Id', 'Response']:
