@@ -88,15 +88,19 @@ def select_subset(minmax_, df, filenames):
 
     out_train = out_train[(out_train['Response']>=minmax_[0]) & (out_train['Response_pred']>=minmax_[0]) & (out_train['Response']<=minmax_[1]) & (out_train['Response_pred']<=minmax_[1])].copy()
     out_train.set_index('Id')
-    
-    out_test = out_test[(out_test['Response']>=minmax_[0]) & (out_test['Response_pred']>=minmax_[0]) & (out_test['Response']<=minmax_[1]) & (out_test['Response_pred']<=minmax_[1])].copy()
-    out_test.set_index('Id')
+    df[0] = out_train
 
     #store labels in separate output file:
     out_train_labels = pd.DataFrame({"Id": out_train['Id_pred'].astype(int).values, "Response": out_train['Response_pred'].astype(int).values})
     out_train_labels.set_index('Id')
     out_train_labels.to_csv(filenames[1]['out'], index=False) #Id is the index
+    df[1] = out_train_labels
 
+    #for the test dataset the Response field contains -1
+    out_test = out_test[(out_test['Response_pred']>=minmax_[0]) & (out_test['Response_pred']<=minmax_[1])].copy()
+    out_test.set_index('Id')
+    df[2] = out_test
+        
     out_train.drop(['Id_pred','Response_pred'], axis=1)
     #write output:
     out_train.to_csv(filenames[0]['out'], index=False) #Id is the index
@@ -105,6 +109,7 @@ def select_subset(minmax_, df, filenames):
     out_test_labels = pd.DataFrame({"Id": out_test['Id_pred'].astype(int).values, "Response": out_test['Response_pred'].astype(int).values})
     out_test_labels.set_index('Id')
     out_test_labels.to_csv(filenames[3]['out'], index=False) #Id is the index
+    df[3] = out_test_labels
 
     out_test.drop(['Id_pred','Response_pred'], axis=1)
     #write output:
