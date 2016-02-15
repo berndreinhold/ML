@@ -14,12 +14,27 @@ from sklearn import decomposition
 import seaborn as sns
 import math
 
+minmax = [(1,2),(3,4),(5,6),(7,8)]
+
 def main():
 
-    train = { 'in': '/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_standardized.csv', 'out': '/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_afterPCA.csv'}
-    test = { 'in': '/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_standardized.csv', 'out': '/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_afterPCA.csv'}
+    path = '/home/reinhold/data/ML/Prudential/intermediate_data/'
+    #train = { 'in': path + 'train_Prudential_standardized.csv',
+    #          'out': path + 'train_Prudential_afterPCA.csv'}
+    #test = { 'in': path + 'test_Prudential_standardized.csv',
+    #         'out': path + 'test_Prudential_afterPCA.csv'}
 
-             
+    for i in minmax:
+        train = { 'in': path + 'train_Prudential_pred_resp%d-%d.csv' % i,
+                  'out': path + 'train_Prudential_pred_afterPCA_resp%d-%d.csv' % i}
+        test = { 'in': path + 'test_Prudential_pred_resp%d-%d.csv' % i,
+                 'out': path + 'test_Prudential_pred_afterPCA_resp%d-%d.csv' % i}
+        loop(train, test)
+
+
+
+
+def loop(train, test):
 
     #training dataset:
     #df_train = pd.read_csv('/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_cleaned.csv', header=0)
