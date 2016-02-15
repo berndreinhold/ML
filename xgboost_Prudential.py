@@ -36,14 +36,14 @@ def get_params():
     params["objective"] = "reg:linear"
     #params["objective"] = "reg:logistic"     
     params["eta"] = 0.045
-    params["min_child_weight"] = 50
-    #params["min_child_weight"] = 70 #my own optimization
+    #params["min_child_weight"] = 50
+    params["min_child_weight"] = 70 #my own optimization
     params["subsample"] = 0.8
-    #params["colsample_bytree"] = 0.7
+    params["colsample_bytree"] = 0.7
     params["silent"] = 1
     #params["silent"] = 0
-    params["max_depth"] = 7 #from a script 
-    #params["max_depth"] = 9 #read
+    #params["max_depth"] = 7 #from a script 
+    params["max_depth"] = 9 #read
     plst = list(params.items())
 
     return plst
@@ -56,72 +56,69 @@ def apply_offset(data, bin_offset, sv, scorer=eval_wrapper):
 
 
 def main():
+    minmax = [(1,2),(3,4),(5,6),(7,8)]
+    for i in minmax:
+        loop(i)
+
+
+def loop(minmax_):
+
+
+    path =  ('/home/reinhold/data/ML/Prudential/intermediate_data/',
+             '/home/reinhold/data/ML/Prudential/output_data/')
+
+    train = { 'in': path[0] + 'train_Prudential_pred_afterPCA_resp%d-%d.csv' % (minmax_[0], minmax_[1]),
+              'out': path[1] + 'train_Prudential_pred_BDT_resp%d-%d.csv' % (minmax_[0], minmax_[1])}
+    test = { 'in': path[0] + 'test_Prudential_pred_afterPCA_resp%d-%d.csv' % (minmax_[0], minmax_[1]),
+             'out': path[1] + 'test_Prudential_pred_BDT_resp%d-%d.csv' % (minmax_[0], minmax_[1])}
+
+    train_labels = { 'in': path[0] + "train_Prudential_predicted_labels_pred_resp%d-%d.csv" % (minmax_[0], minmax_[1]),
+                     'out': path[1] + "train_Prudential_predicted_labels_BDT_pred_resp%d-%d.csv" % (minmax_[0], minmax_[1])}
+
+    test_labels = { 'in': path[0] + "test_Prudential_predicted_labels_pred_resp%d-%d.csv" % (minmax_[0], minmax_[1]),
+                     'out': path[1] + "test_Prudential_predicted_labels_BDT_pred_resp%d-%d.csv" % (minmax_[0], minmax_[1])}
+
+    filenames = [train, train_labels, test, test_labels] 
+
+    print("Load the data using pandas")
+    #all_data = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/Prudential_1000.csv", header=0)
+    df = []
+    df[len(df):] = [pd.read_csv(train['in'], header=0)]
+    df[len(df):] = [pd.read_csv(train_labels['in'], header=0)]
+    df[len(df):] = [pd.read_csv(test['in'], header=0)]
+    df[len(df):] = [pd.read_csv(test_labels['in'], header=0)] 
+    
+    for i in df:
+        print(i.shape)
+
+    df_train_labels = df[1]
+    #include the neigboring responses:
+    unique_responses = df_train_labels['Response'].unique()
+    if min(unique_responses)<1: print("unexpected min response value: %d" % min(unique_responses))
+    if max(unique_responses)>8: print("unexpected max response value: %d" % max(unique_responses))
+
+    print(minmax_)
+
     # global variables
     columns_to_drop = ['Id', 'Response']
     xgb_num_rounds = 500
-    num_classes = 8
-
-    print("Load the data using pandas")
-    #all_data = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/Prudential_1000.csv", header=0) ### useful for testing
-    #train = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_cleaned.csv", header=0)
-    #test = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_cleaned.csv", header=0)
-    #train = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_stripped_array_variables.csv", header=0)
-    #test = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_stripped_array_variables.csv", header=0)
-    #train = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_afterPCA.csv", header=0)
-    #test = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_afterPCA.csv", header=0)
-    train = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_standardized.csv", header=0)
-    test = pd.read_csv("/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_standardized.csv", header=0)
-    #train = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/train_Prudential.csv", header=0)
-    #test = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/test_Prudential.csv", header=0)
-
-    #print(train['Response'].unique())
-    #print(train[train['Response']>0].shape)
-    # combine train and test
-    all_data = train.append(test)
+    num_classes = len(unique_responses) #can be modified below
 
     print('Eliminate missing values')    
     # Use -1 for any others
-    all_data.fillna(-1, inplace=True)
-
-
-    ## create any new variables    
-    #all_data['Product_Info_2_char'] = all_data.Product_Info_2.str[1]
-    #all_data['Product_Info_2_num'] = all_data.Product_Info_2.str[2]
+    for i in df:
+        i.fillna(-1, inplace=True)
+        print(i.shape)
     
-    ## factorize categorical variables
-    #all_data['Product_Info_2'] = pd.factorize(all_data['Product_Info_2'])[0]
-    #all_data['Product_Info_2_char'] = pd.factorize(all_data['Product_Info_2_char'])[0]
-    #all_data['Product_Info_2_num'] = pd.factorize(all_data['Product_Info_2_num'])[0]
-
-    print(all_data['Response'].unique())
-    print(all_data[all_data['Response']>0].shape)
-
-    # fix the dtype on the label column
-    all_data['Response'] = all_data['Response'].astype(int)
-
-
-    # Provide split column ###ToDo: not quite clear, where this is used. Inside xgboost?
-    all_data['Split'] = np.random.randint(5, size=all_data.shape[0])
-    
-    # split train and test
-    train = all_data[all_data['Response']>0].copy()
-    test = all_data[all_data['Response']<1].copy()
-
-    print(train.shape)
-    print(test.shape)
     
     # convert data to xgb data structure
-    xgtrain = xgb.DMatrix(train.drop(columns_to_drop, axis=1), train['Response'].values)
+    xgtrain = xgb.DMatrix(df[0].drop(columns_to_drop, axis=1), df[1]['Response'].values) #training set
     #xgtrain = xgb.DMatrix(train.drop(columns_to_drop, axis=1), label=train['Response'].values)
-    xgtest = xgb.DMatrix(test.drop(columns_to_drop, axis=1), label=test['Response'].values)    
+    xgtest = xgb.DMatrix(df[2].drop(columns_to_drop, axis=1), label=df[3]['Response'].values) #test set    
     
     # get the parameters for xgboost
     plst = get_params()
     print(plst)      
-
-    
-    # train model
-    #print(xgb.get_params())
 
     model = xgb.train(plst, xgtrain, xgb_num_rounds) 
     print("after training: %.3f seconds" % (time.time() - start_time))
@@ -132,7 +129,7 @@ def main():
         print(i, y)
         if i>20: break
 
-    training_score, numerator, denominator = eval_wrapper_with_matrices(train_preds, train['Response'])
+    training_score, numerator, denominator = eval_wrapper_with_matrices(train_preds, df[1]['Response'])
     print('Train score is:', training_score)
     test_preds = model.predict(xgtest, ntree_limit=model.best_iteration)
     train_preds = np.clip(train_preds, -0.99, 8.99)
@@ -144,10 +141,9 @@ def main():
     print("denominator:")
     print(denominator)
 
-
     # train offsets 
     offsets = np.ones(num_classes) * -0.5
-    offset_train_preds = np.vstack((train_preds, train_preds, train['Response'].values))
+    offset_train_preds = np.vstack((train_preds, train_preds, df[1]['Response'].values))
     for j in range(num_classes):
         train_offset = lambda x: -apply_offset(offset_train_preds, x, j)
         offsets[j] = fmin_powell(train_offset, offsets[j])  
@@ -155,19 +151,28 @@ def main():
     print("after training offsets: %.3f seconds" % (time.time() - start_time))
     
     # apply offsets to test
-    data = np.vstack((test_preds, test_preds, test['Response'].values))
+    data = np.vstack((test_preds, test_preds, df[3]['Response'].values))
     for j in range(num_classes):
         data[1, data[0].astype(int)==j] = data[0, data[0].astype(int)==j] + offsets[j] 
 
     final_test_preds = np.round(np.clip(data[1], 1, 8)).astype(int)
 
-    preds_out = pd.DataFrame({"Id": test['Id'].values, "Response": final_test_preds})
+    preds_out = pd.DataFrame({"Id": df[3]['Id'].values, "Response": final_test_preds})
     preds_out = preds_out.set_index('Id')
-    #output_buffer = '/home/reinhold/data/ML/Prudential/output_data/py_xgb_stripped_array_variables.csv'
-    #output_buffer = '/home/reinhold/data/ML/Prudential/output_data/py_xgb_afterPCA_train_only.csv'
-    output_buffer = '/home/reinhold/data/ML/Prudential/output_data/py_xgb_afterPCA_Feb12.csv'
-    preds_out.to_csv(output_buffer)
-    print("file created: ", output_buffer)
+    preds_out.to_csv(filenames[3]['out'])
+    print("file created: ", filenames[3]['out'])
+
+    # apply offsets to training set
+    data = np.vstack((train_preds, train_preds, df[1]['Response'].values))
+    for j in range(num_classes):
+        data[1, data[0].astype(int)==j] = data[0, data[0].astype(int)==j] + offsets[j] 
+
+    final_train_preds = np.round(np.clip(data[1], 1, 8)).astype(int)
+
+    train_preds_out = pd.DataFrame({"Id": df[1]['Id'].values, "Response": final_train_preds})
+    train_preds_out = train_preds_out.set_index('Id')
+    train_preds_out.to_csv(filenames[1]['out'])
+    print("file created: ", filenames[1]['out'])
 
 if __name__ == "__main__":
     main()
