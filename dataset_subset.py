@@ -12,16 +12,21 @@ start_time = time.time()
 
 minmax = [(1,2),(3,4),(5,6),(7,8)]
 
-#minmax is a tuple
+
 def modified_response(x, minmax):
-    if x in minmax: return x
-    elif x<min(minmax): return min(minmax)-1
-    elif x>max(minmax): return max(minmax)+1
-    return -1
+    #minmax is a tuple, e.g. (1,2)
+    buffer = 0
+    if x in minmax: buffer = x-min(minmax)+2
+    elif x<min(minmax): buffer = 1
+    elif x>max(minmax): buffer = 4
+    if min(minmax)==1: buffer -= 1 #subtract one, in case there is no possible value below minmax
+    return buffer
 
 def main():
 
     for i in minmax:
+        #for k in range(1,9):
+        #    print(k, i, modified_response(k, i))    
         loop(i)
 
 
