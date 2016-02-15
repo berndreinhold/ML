@@ -12,6 +12,13 @@ start_time = time.time()
 
 minmax = [(1,2),(3,4),(5,6),(7,8)]
 
+#minmax is a tuple
+def modified_response(x, minmax):
+    if x in minmax: return x
+    elif x<min(minmax): return min(minmax)-1
+    elif x>max(minmax): return max(minmax)+1
+    return -1
+
 def main():
 
     for i in minmax:
@@ -54,22 +61,24 @@ def loop(minmax_):
     if min(unique_responses)<1: print("unexpected min response value: %d" % min(unique_responses))
     if max(unique_responses)>8: print("unexpected max response value: %d" % max(unique_responses))
 
-    minmax_ = (max(minmax_[0]-1, min(unique_responses)), min(minmax_[1]+1, max(unique_responses)))
+    minmax2 = (max(minmax_[0]-1, min(unique_responses)), min(minmax_[1]+1, max(unique_responses)))
     #minmax_ = (-1, minmax[1]+1)
     #print(type(minmax[0]))
     print(minmax_)
+    print(minmax2)
     #select_subset(minmax_, df_train, df_predicted_labels, output_name, output_labels_name)
-    select_subset(minmax_, df, filenames)
+    select_subset(minmax_, minmax2, df, filenames)
 
 
 #def select_subset(minmax_, train, actual_labels, predicted_labels):
 
-def select_subset(minmax_, df, filenames):
+def select_subset(minmax_, minmax2, df, filenames):
     """
     select subset of the whole training set in order to perform
     parameters:
     -----------
-    minmax_: is a tuple defining the selection range, e.g. (1,2)
+    minmax_: is a tuple defining the selection range, e.g. (1,2) -> select on the predicted labels only
+    minmax2: select range in both predicted and actual labels
     train: the training dataframe
     actual_labels: the dataframe of actual labels (to be trained on)
     predicted_labels: labels as predicted by a previous round of boosted decision tree
@@ -86,12 +95,15 @@ def select_subset(minmax_, df, filenames):
 
     #print(out_train)
 
-    out_train = out_train[(out_train['Response']>=minmax_[0]) & (out_train['Response_pred']>=minmax_[0]) & (out_train['Response']<=minmax_[1]) & (out_train['Response_pred']<=minmax_[1])].copy()
+    #predicted(1,2) OR (predicted(1,3)&actual(1,3)) --- predicted(3,4) OR (predicted(2,5)&actual(2,5))
+    #minmax_ = (1,2), minmax2 = (1,3) --- minmax_ = (3,4), minmax2 = (2,5)
+    out_train = out_train[((out_train['Response_pred']>=minmax_[0]) & (out_train['Response_pred']<=minmax_[1])) | ((out_train['Response']>=minmax2[0]) & (out_train['Response']<=minmax2[1]) & (out_train['Response_pred']>=minmax2[0]) & (out_train['Response_pred']<=minmax2[1]))].copy()
     out_train.set_index('Id')
     df[0] = out_train
 
     #store labels in separate output file:
-    out_train_labels = pd.DataFrame({"Id": out_train['Id_pred'].astype(int).values, "Response": out_train['Response_pred'].astype(int).values})
+    #modified response just limits the range for actual responses to (1,2)+-1
+    out_train_labels = pd.DataFrame({"Id": out_train['Id_pred'].astype(int).values, "Response_pred": out_train['Response_pred'].astype(int).values, "Response":out_train['Response'].apply(lambda x: modified_response(x, minmax_)).astype(int).values})
     out_train_labels.set_index('Id')
     out_train_labels.to_csv(filenames[1]['out'], index=False) #Id is the index
     df[1] = out_train_labels
@@ -106,7 +118,7 @@ def select_subset(minmax_, df, filenames):
     out_train.to_csv(filenames[0]['out'], index=False) #Id is the index
 
     #store labels in separate output file:
-    out_test_labels = pd.DataFrame({"Id": out_test['Id_pred'].astype(int).values, "Response": out_test['Response_pred'].astype(int).values})
+    out_test_labels = pd.DataFrame({"Id": out_test['Id_pred'].astype(int).values, "Response_pred": out_test['Response_pred'].astype(int).values, "Response":-1})
     out_test_labels.set_index('Id')
     out_test_labels.to_csv(filenames[3]['out'], index=False) #Id is the index
     df[3] = out_test_labels
