@@ -14,8 +14,13 @@ minmax = [(1,2),(3,4),(5,6),(7,8)]
 
 def main():
 
-    minmax_ = minmax[0]
-    
+    for i in minmax:
+        loop(i)
+
+
+def loop(minmax_):
+
+
     path =  ('/home/reinhold/data/ML/Prudential/intermediate_data/',
              '/home/reinhold/data/ML/Prudential/output_data/')
 
