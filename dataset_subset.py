@@ -21,8 +21,8 @@ def main():
     train = pd.read_csv("/home/reinhold/data/ML/Prudential/input_data/train_Prudential.csv", header=0)
     predicted_labels = pd.read_csv("/home/reinhold/data/ML/Prudential/output_data/py_xgb_train_afterPCA_Feb14.csv", header=0)
 
-    output_name = "/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_subset%d-%d.csv" % (minmax[0][0], minmax[0][1])
-    #output_predicted_labels = "/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_subset%d-%d.csv" % (minmax[0][0], minmax[0][1])
+    output_name = "/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_pred_resp%d-%d.csv" % (minmax[0][0], minmax[0][1])
+    output_labels_name = "/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_predicted_labels_pred_resp%d-%d.csv" % (minmax[0][0], minmax[0][1])
 
     print(train.shape)
     print(predicted_labels.shape)
@@ -35,12 +35,12 @@ def main():
     #minmax_ = (minmax[0]-1, minmax[1]+1)
     #print(type(minmax[0]))
     print(minmax_)
-    select_subset(minmax_, train, predicted_labels, output_name)
+    select_subset(minmax_, train, predicted_labels, output_name, output_label_name)
 
 
 #def select_subset(minmax_, train, actual_labels, predicted_labels):
 
-def select_subset(minmax_, train, predicted_labels, output_train_name):
+def select_subset(minmax_, train, predicted_labels, output_train_name, output_train_labels_name):
     """
     select subset of the whole training set in order to perform
     parameters:
@@ -64,6 +64,14 @@ def select_subset(minmax_, train, predicted_labels, output_train_name):
     #out_train = out_train[(out_train['Response']>=1) & (out_train['Response']<=3) & (out_train['Response_pred']>=1) & (out_train['Response_pred']<=3)].copy()
 
     out_train.set_index('Id')
+
+    #store labels in separate output file:
+    out_train_labels = pd.DataFrame({"Id": out_train['Id_pred'].astype(int).values, "Response": df_train['Response_pred'].astype(int).values})
+    out_train_labels.set_index('Id')
+    out_train_labels.to_csv(output_train_labels_name, index=False) #Id is the index
+
+    out_train.drop(['Id_pred','Response_pred'], axis=1)
+    #write output:
     out_train.to_csv(output_train_name, index=False) #Id is the index
 
 
