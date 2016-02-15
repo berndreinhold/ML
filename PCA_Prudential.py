@@ -14,37 +14,16 @@ from sklearn import decomposition
 import seaborn as sns
 import math
 
-    
-def PCA(df, n_compnts=None):
-    """
-    df is a dataframe, without labels/ response-variables
-    """
-
-    print("PCA with %s components" % n_compnts)
-    #eigen_val, eigen_vec = np.linalg.eig(np.cov(X.transpose()))
-    #print "eigen_val, eigen_vec (1)"
-    #print eigen_val
-    #print eigen_vec
-    pca = decomposition.PCA(n_components=n_compnts)
-    pca.fit(df) #fit the model with X - what does that mean?
-    print("pca.components_.T:")
-    print(pca.components_.T)
-    print("pca.mean_:", pca.mean_) 
-    return pca.transform(df), pca.components_.T, pca.mean_
-    #pca.components_
-    #print pca.explained_variance_ratio_
-    #buffer = pca.transform(X) #apply the dimensionality reduction on X
-    #eigen_val, eigen_vec = np.linalg.eig(np.cov(buffer.transpose()))
-    #print "eigen_val, eigen_vec (2)"
-    #print eigen_val
-    #print eigen_vec
-    #return buffer
-
 def main():
+
+    train = { 'in': '/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_standardized.csv', 'out': '/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_afterPCA.csv'}
+    test = { 'in': '/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_standardized.csv', 'out': '/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_afterPCA.csv'}
+
+             
 
     #training dataset:
     #df_train = pd.read_csv('/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_cleaned.csv', header=0)
-    df_train = pd.read_csv('/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_standardized.csv', header=0)
+    df_train = pd.read_csv(train['in'], header=0)
     print("unique values df_train:")
     print(df_train['Response'].unique())
     
@@ -60,7 +39,7 @@ def main():
 
     #test dataset:
     #df_test = pd.read_csv('/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_cleaned.csv', header=0)
-    df_test = pd.read_csv('/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_standardized.csv', header=0)
+    df_test = pd.read_csv(test['in'], header=0)
     #df_test_buffer = pd.DataFrame(df_test[['Id','Response']], columns=['Id', 'Response'], index=df_test['Id']) #copy them before they are being dropped, for later insertion in the output dataframe
     df_test_buffer = pd.DataFrame({"Id": df_test['Id'].astype(int).values, "Response": df_test['Response'].astype(int).values})
     print("unique values df_test_buffer:")
@@ -81,21 +60,27 @@ def main():
     #print(pca.explained_variance_)
     #print(pca.explained_variance_ratio_)
 
+    #buffer = pca.transform(X) #apply the dimensionality reduction on X
+    #eigen_val, eigen_vec = np.linalg.eig(np.cov(buffer.transpose()))
+    #print "eigen_val, eigen_vec (2)"
+    #print eigen_val
+    #print eigen_vec
+    
 
-
-    #return
     #transform
     df_train_PCA = pd.DataFrame(pca.transform(df_train))
     df_train_PCA['Id']= df_train_buffer['Id'] 
     df_train_PCA['Response']= df_train_buffer['Response']
     df_train_PCA.set_index('Id')
-    df_train_PCA.to_csv('/home/reinhold/data/ML/Prudential/intermediate_data/train_Prudential_afterPCA.csv', index=False)
+    df_train_PCA.to_csv(train['out'], index=False)
     
     df_test_PCA = pd.DataFrame(pca.transform(df_test))
     df_test_PCA['Id']= df_test_buffer['Id'] 
     df_test_PCA['Response']= df_test_buffer['Response'] 
     df_test_PCA.set_index('Id')
-    df_test_PCA.to_csv('/home/reinhold/data/ML/Prudential/intermediate_data/test_Prudential_afterPCA.csv', index=False)
+    df_test_PCA.to_csv(test['out'], index=False)
+
+    print("output files: %s and %s"% (train['out'], test['out']))
 
     #print(type(eigen_val_matrix))
     #print(eigen_val_matrix.size)
@@ -111,6 +96,7 @@ def main():
     fig.autofmt_xdate(rotation=70) #does not exist for y-axis!
     #ax.set_yticklabels(ax.yaxis.get_majorticklabels(), rotation=0) #http://stackoverflow.com/questions/10998621/rotate-axis-text-in-python-matplotlib
     plt.savefig("corr_matrix_afterPCA.png")
+    print("output: corr_matrix_afterPCA.png")
         
 if __name__ == "__main__":
     main()
